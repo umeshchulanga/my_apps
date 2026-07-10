@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Personal Finance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#F2EBDA;
+    --sheet:#FBF7EC;
+    --sheet-alt:#F6F0E1;
+    --ink:#26231C;
+    --ink-soft:#736B58;
+    --ink-faint:#A79E88;
+    --rule:#DCD1B0;
+    --rule-strong:#C9BB93;
+    --navy:#1E3354;
+    --navy-soft:#3E547A;
+    --green:#2E6B4F;
+    --green-soft:#E4EFE7;
+    --rust:#9C3B32;
+    --rust-soft:#F3E4E1;
+    --gold:#A9791F;
+    --gold-soft:#F1E6C9;
+    --shadow:rgba(38,35,28,0.10);
+    --radius:10px;
+    color-scheme: light;
+  }
+  [data-theme="dark"]{
+    --bg:#14161C;
+    --sheet:#1D202A;
+    --sheet-alt:#20232E;
+    --ink:#E9E4D6;
+    --ink-soft:#A39C89;
+    --ink-faint:#6E6A5C;
+    --rule:#333748;
+    --rule-strong:#3E4358;
+    --navy:#7FA0D6;
+    --navy-soft:#5D7CB0;
+    --green:#6FBB92;
+    --green-soft:#1E2E27;
+    --rust:#E08877;
+    --rust-soft:#332020;
+    --gold:#D9AE53;
+    --gold-soft:#332A15;
+    --shadow:rgba(0,0,0,0.45);
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    transition:background .25s ease, color .25s ease;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  h1,h2,h3,h4,.serif{font-family:'Fraunces',serif;}
+  .eyebrow{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:18px 28px;
+    background:var(--navy);
+    color:#F3EEDD;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .mark{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:.01em;
+  }
+  .brand .tag{
+    font-size:12.5px;
+    color:#C9D3E4;
+    font-style:italic;
+    font-family:'Fraunces',serif;
+  }
+  .top-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .status-chip{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.14);
+    font-size:12px;
+    font-weight:500;
+    color:#D8DFEC;
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%;background:#C77;}
+  .status-dot.connected{background:#7FCB9C; box-shadow:0 0 0 3px rgba(127,203,156,0.18);}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:7px;
+    border:1px solid transparent;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-primary{background:var(--gold); color:#2A1F05; border-color:var(--gold);}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.06);}
+  .btn-ghost-light{background:rgba(255,255,255,0.1); color:#F3EEDD; border-color:rgba(255,255,255,0.22);}
+  .btn-ghost-light:hover:not(:disabled){background:rgba(255,255,255,0.18);}
+  .btn-outline{background:transparent; color:var(--navy); border-color:var(--rule-strong);}
+  .btn-outline:hover:not(:disabled){background:var(--sheet-alt);}
+  .btn-block{width:100%; justify-content:center;}
+  .btn-sm{padding:4px 9px; font-size:11.5px; border-radius:5px;}
+  .btn-text-danger{color:var(--rust); background:transparent; border-color:transparent; padding:4px 6px;}
+  .btn-text-danger:hover{background:var(--rust-soft);}
+  .btn-text{color:var(--navy-soft); background:transparent; border-color:transparent; padding:4px 6px;}
+  .btn-text:hover{background:var(--sheet-alt);}
+  .icon-toggle{
+    width:34px; height:34px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.22);
+    color:#F3EEDD; cursor:pointer; font-size:15px;
+  }
+  .icon-toggle:hover{background:rgba(255,255,255,0.18);}
+
+  /* ---------- layout ---------- */
+  .shell{max-width:1440px; margin:0 auto; padding:24px 28px 60px;}
+  .onboard{
+    display:flex; align-items:center; gap:16px;
+    background:var(--gold-soft); border:1px solid var(--gold);
+    border-radius:var(--radius); padding:16px 20px; margin-bottom:22px;
+  }
+  .onboard .icon{font-size:22px;}
+  .onboard h4{margin:0 0 2px; font-size:15px;}
+  .onboard p{margin:0; font-size:13px; color:var(--ink-soft);}
+  .onboard.hidden{display:none;}
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .stat-card{
+    background:var(--sheet);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    box-shadow:0 1px 2px var(--shadow);
+    border-left:4px solid var(--rule-strong);
+    position:relative;
+  }
+  .stat-card.savings{border-left-color:var(--green);}
+  .stat-card.debts{border-left-color:var(--rust);}
+  .stat-card.net{border-left-color:var(--navy);}
+  .stat-card .eyebrow{margin-bottom:6px;}
+  .stat-card .value{font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700;}
+  .stat-card.savings .value{color:var(--green);}
+  .stat-card.debts .value{color:var(--rust);}
+
+  .layout{display:grid; grid-template-columns:340px 1fr; gap:22px; align-items:start;}
+  .sidebar{display:flex; flex-direction:column; gap:18px; position:sticky; top:20px;}
+
+  .panel{
+    background:var(--sheet);
+    border-radius:var(--radius);
+    box-shadow:0 1px 2px var(--shadow);
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:14px 18px;
+    border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .panel-head h3{margin:0; font-size:15.5px; font-weight:600; color:var(--ink);}
+  .panel-body{padding:16px 18px;}
+
+  .field{margin-bottom:12px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;
+  }
+  input, select{
+    width:100%;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    padding:9px 10px;
+    border-radius:6px;
+    border:1px solid var(--rule-strong);
+    background:var(--bg);
+    color:var(--ink);
+    outline:none;
+  }
+  input:focus, select:focus{border-color:var(--navy); box-shadow:0 0 0 3px rgba(30,51,84,0.12);}
+  [data-theme="dark"] input:focus, [data-theme="dark"] select:focus{box-shadow:0 0 0 3px rgba(127,160,214,0.18);}
+  input:disabled, select:disabled{opacity:.5; cursor:not-allowed;}
+  input.field-invalid, select.field-invalid{border-color:var(--rust); animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+  .amount-field{display:flex; align-items:stretch;}
+  .amount-field .prefix{
+    display:flex; align-items:center; padding:0 10px;
+    background:var(--sheet-alt); border:1px solid var(--rule-strong); border-right:none;
+    border-radius:6px 0 0 6px; font-family:'JetBrains Mono',monospace; color:var(--ink-soft); font-size:13px;
+  }
+  .amount-field input{border-radius:0 6px 6px 0;}
+  .row-2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .actions-row{display:flex; gap:8px; margin-top:12px;}
+
+  .chip-list{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--sheet-alt); border:1px solid var(--rule);
+    border-radius:999px; padding:5px 6px 5px 12px; font-size:12.5px; color:var(--ink);
+  }
+  .chip button{
+    width:16px; height:16px; border-radius:50%; border:none; background:var(--rule-strong);
+    color:var(--sheet); font-size:10px; line-height:1; cursor:pointer;
+  }
+  .chip button:hover{background:var(--rust);}
+
+  .goal-card{border:1px solid var(--rule); border-radius:8px; padding:12px 13px; margin-bottom:10px;}
+  .goal-card:last-child{margin-bottom:0;}
+  .goal-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .goal-name{font-weight:600; font-size:13.5px;}
+  .goal-nums{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .goal-actions{display:flex; gap:4px;}
+  .bar-track{height:9px; border-radius:99px; background:var(--rule); overflow:hidden;}
+  .bar-fill{height:100%; background:var(--gold); border-radius:99px; transition:width .3s ease;}
+  .bar-fill.complete{background:var(--green);}
+  .goal-pct{font-size:11px; color:var(--ink-soft); margin-top:4px; text-align:right;}
+  .empty-note{font-size:12.5px; color:var(--ink-faint); text-align:center; padding:14px 4px;}
+
+  .charts-row{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;}
+  .chart-card canvas{max-height:280px;}
+
+  .filters-bar{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .filters-bar input, .filters-bar select{width:auto; font-size:12.5px; padding:7px 9px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th{
+    text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-soft); padding:10px 14px; border-bottom:1px solid var(--rule-strong);
+    background:var(--sheet-alt); position:sticky; top:0;
+  }
+  tbody td{padding:10px 14px; border-bottom:1px solid var(--rule);}
+  tbody tr:hover{background:var(--sheet-alt);}
+  .table-scroll{max-height:340px; overflow-y:auto;}
+  .amount-cell{font-family:'JetBrains Mono',monospace; font-weight:600;}
+  .amount-cell.pos{color:var(--green);}
+  .amount-cell.neg{color:var(--rust);}
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px;
+    font-size:11.5px; font-weight:600;
+  }
+  .badge.savings{background:var(--green-soft); color:var(--green);}
+  .badge.debts{background:var(--rust-soft); color:var(--rust);}
+  .row-actions{display:flex; gap:4px;}
+
+  /* ---------- toasts ---------- */
+  #toast-container{position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:8px; z-index:999;}
+  .toast{
+    background:var(--ink); color:var(--sheet);
+    padding:11px 16px; border-radius:8px; font-size:13px; font-weight:500;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    display:flex; align-items:center; gap:8px;
+    animation:toast-in .2s ease;
+    max-width:320px;
+  }
+  [data-theme="dark"] .toast{background:var(--sheet); color:var(--ink); border:1px solid var(--rule);}
+  .toast.success{border-left:4px solid var(--green);}
+  .toast.error{border-left:4px solid var(--rust);}
+  @keyframes toast-in{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--rule-strong); border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  @media (max-width: 1080px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{position:static;}
+    .summary-grid{grid-template-columns:1fr;}
+    .charts-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">
+    <span class="mark">Ledger</span>
+    <span class="tag">a plain-language finance tracker</span>
+  </div>
+  <div class="top-actions">
+    <div class="status-chip">
+      <span id="status-indicator" class="status-dot"></span>
+      <span id="status-text">No file connected</span>
+    </div>
+    <button class="icon-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="btn btn-ghost-light" onclick="connectDatabase()">📁 Connect ledger file</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <div class="onboard" id="onboard-banner">
+    <div class="icon">📖</div>
+    <div>
+      <h4>Start by connecting a ledger file</h4>
+      <p>Pick a <span class="mono">.json</span> file to store your data — an empty or new file works fine. Everything you enter is saved straight back to that file on your device.</p>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="stat-card savings">
+      <div class="eyebrow">Total savings</div>
+      <div id="summary-savings" class="value">$0.00</div>
+    </div>
+    <div class="stat-card debts">
+      <div class="eyebrow">Total debt</div>
+      <div id="summary-debts" class="value">$0.00</div>
+    </div>
+    <div class="stat-card net">
+      <div class="eyebrow">Net balance</div>
+      <div id="summary-net" class="value">$0.00</div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="panel">
+        <div class="panel-head"><h3>1. Categories</h3></div>
+        <div class="panel-body">
+          <div class="field">
+            <label>New category</label>
+            <input type="text" id="new-item-name" placeholder="e.g. Salary, Rent, Groceries" disabled>
+          </div>
+          <button id="btn-add-item" class="btn btn-outline btn-block" onclick="saveItemName()" disabled>Add category</button>
+          <div id="item-names-list" class="chip-list"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3 id="tx-form-title">2. Add entry</h3></div>
+        <div class="panel-body">
+          <div class="field">
+            <label>Type</label>
+            <select id="t-type" disabled>
+              <option value="savings">📈 Savings</option>
+              <option value="debts">📉 Debt</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <select id="t-name" disabled required>
+              <option value="" disabled selected>Select a category</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <div class="amount-field">
+              <span class="prefix">$</span>
+              <input type="number" id="t-amount" placeholder="0.00" disabled required>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button id="btn-tx" class="btn btn-primary btn-block" onclick="saveTransaction()" disabled>Save entry</button>
+            <button id="btn-tx-cancel" class="btn btn-outline" onclick="cancelTxEdit()" style="display:none;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Goals</h3></div>
+        <div class="panel-body">
+          <div class="field">
+            <label>Goal name</label>
+            <input type="text" id="g-name" placeholder="e.g. Emergency fund" disabled>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label>Target</label>
+              <input type="number" id="g-target" placeholder="0.00" disabled>
+            </div>
+            <div class="field">
+              <label>Current</label>
+              <input type="number" id="g-current" placeholder="0.00" disabled>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button id="btn-goal" class="btn btn-primary btn-block" onclick="saveGoal()" disabled>Add goal</button>
+            <button id="btn-goal-cancel" class="btn btn-outline" onclick="cancelGoalEdit()" style="display:none;">Cancel</button>
+          </div>
+          <div id="goals-container" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <div class="charts-row">
+        <div class="panel chart-card">
+          <div class="panel-body">
+            <h4 style="margin:0 0 10px; font-size:14.5px;">Balance over time</h4>
+            <canvas id="financeChart"></canvas>
+          </div>
+        </div>
+        <div class="panel chart-card">
+          <div class="panel-body">
+            <h4 style="margin:0 0 10px; font-size:14.5px;">By category</h4>
+            <canvas id="itemChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head"><h3>Category totals</h3></div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Category</th><th>Savings</th><th>Debt</th><th>Net</th></tr>
+            </thead>
+            <tbody id="category-summary-body">
+              <tr><td colspan="4" class="empty-note">No categories yet — connect a file to begin.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Transaction ledger</h3>
+          <div class="filters-bar">
+            <input type="text" id="filter-search" placeholder="Search category…" oninput="renderHistory()">
+            <select id="filter-type" onchange="renderHistory()">
+              <option value="all">All entries</option>
+              <option value="savings">📈 Savings</option>
+              <option value="debts">📉 Debt</option>
+            </select>
+            <input type="date" id="filter-date-from" onchange="renderHistory()" title="From date">
+            <input type="date" id="filter-date-to" onchange="renderHistory()" title="To date">
+            <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+            <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Category</th><th>Amount</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="tx-history-body">
+              <tr><td colspan="5" class="empty-note">No entries yet — connect a file to begin.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  let fileHandle = null;
+  let appData = { savings: [], debts: [], goals: [], itemNames: [] };
+  let chartInstance = null;
+  let itemChartInstance = null;
+
+  let editingTxType = null;
+  let editingTxIndex = null;
+  let editingGoalIndex = null;
+
+  /* ---------------- theme ---------------- */
+  function applyTheme(theme){
+    document.body.setAttribute('data-theme', theme);
+    document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+    try { localStorage.setItem('ledger-theme', theme); } catch(e) {}
+    if (appData.savings.length || appData.debts.length) {
+      renderChart(appData.savings, appData.debts);
+      renderItemChart(appData.savings, appData.debts);
+    }
+  }
+  function toggleTheme(){
+    const current = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+  (function initTheme(){
+    let saved = 'light';
+    try { saved = localStorage.getItem('ledger-theme') || 'light'; } catch(e) {}
+    document.body.setAttribute('data-theme', saved);
+    document.getElementById('theme-toggle').textContent = saved === 'dark' ? '☀️' : '🌙';
+  })();
+
+  /* ---------------- toasts ---------------- */
+  function toast(message, type='success'){
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+  function markInvalid(el, message){
+    el.classList.add('field-invalid');
+    toast(message, 'error');
+    el.focus();
+    setTimeout(() => el.classList.remove('field-invalid'), 500);
+  }
+
+  function enableUI(){
+    document.getElementById('status-indicator').classList.add('connected');
+    document.getElementById('status-text').textContent = 'Connected';
+    document.getElementById('onboard-banner').classList.add('hidden');
+    document.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+  }
+
+  async function connectDatabase(){
+    try {
+      [fileHandle] = await window.showOpenFilePicker({
+        types: [{ description: 'Ledger file', accept: { 'application/json': ['.json'] } }],
+        excludeAcceptAllOption: true, multiple: false
+      });
+
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+
+      if (text.trim() === '') {
+        appData = { savings: [], debts: [], goals: [], itemNames: [] };
+        await writeToJsonFile();
+      } else {
+        appData = JSON.parse(text);
+        if (!appData.itemNames) appData.itemNames = [];
+        if (!appData.savings) appData.savings = [];
+        if (!appData.debts) appData.debts = [];
+        if (!appData.goals) appData.goals = [];
+      }
+
+      enableUI();
+      refreshUI();
+      toast('Ledger file connected.');
+    } catch (err) {
+      console.error(err);
+      toast('Could not open that file. Try again.', 'error');
+    }
+  }
+
+  async function writeToJsonFile(){
+    if (!fileHandle) return;
+    try {
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(appData, null, 2));
+      await writable.close();
+    } catch (err) {
+      toast('Could not save to the file.', 'error');
+    }
+  }
+
+  async function saveItemName(){
+    const inputEl = document.getElementById('new-item-name');
+    const name = inputEl.value.trim();
+
+    if (!name) return markInvalid(inputEl, 'Enter a category name.');
+    if (appData.itemNames.includes(name)) return markInvalid(inputEl, 'That category already exists.');
+
+    appData.itemNames.push(name);
+    await writeToJsonFile();
+    inputEl.value = '';
+    refreshUI();
+    toast(`Category "${name}" added.`);
+  }
+
+  async function deleteItemName(index){
+    const name = appData.itemNames[index];
+    if (!confirm(`Remove category "${name}"? Past entries under it are kept.`)) return;
+    appData.itemNames.splice(index, 1);
+    await writeToJsonFile();
+    refreshUI();
+    toast(`Category "${name}" removed.`);
+  }
+
+  async function saveTransaction(){
+    const type = document.getElementById('t-type').value;
+    const nameEl = document.getElementById('t-name');
+    const amountEl = document.getElementById('t-amount');
+    const name = nameEl.value;
+    const amount = parseFloat(amountEl.value);
+
+    if (!name) return markInvalid(nameEl, 'Choose a category.');
+    if (isNaN(amount) || amount <= 0) return markInvalid(amountEl, 'Enter an amount greater than 0.');
+
+    if (editingTxIndex !== null) {
+      if (editingTxType !== type) {
+        appData[editingTxType].splice(editingTxIndex, 1);
+        const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        appData[type].push({ name, date, amount });
+      } else {
+        appData[type][editingTxIndex].name = name;
+        appData[type][editingTxIndex].amount = amount;
+      }
+      cancelTxEdit();
+      toast('Entry updated.');
+    } else {
+      const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      appData[type].push({ name, date, amount });
+      toast('Entry saved.');
+    }
+
+    await writeToJsonFile();
+    clearTxForm();
+    refreshUI();
+  }
+
+  function startEditTx(type, index){
+    editingTxType = type;
+    editingTxIndex = index;
+    const tx = appData[type][index];
+
+    document.getElementById('tx-form-title').textContent = 'Edit entry';
+    document.getElementById('t-type').value = type;
+
+    const selectEl = document.getElementById('t-name');
+    if (tx.name && ![...selectEl.options].some(o => o.value === tx.name)) {
+      const opt = document.createElement('option');
+      opt.value = tx.name;
+      opt.textContent = tx.name + ' (archived)';
+      selectEl.appendChild(opt);
+    }
+
+    selectEl.value = tx.name || '';
+    document.getElementById('t-amount').value = tx.amount;
+    document.getElementById('btn-tx').textContent = 'Update entry';
+    document.getElementById('btn-tx-cancel').style.display = 'inline-flex';
+  }
+
+  async function deleteTransaction(type, index){
+    if (!confirm('Delete this entry? This cannot be undone.')) return;
+
+    if (editingTxType === type && editingTxIndex === index) {
+      cancelTxEdit();
+    } else if (editingTxType === type && index < editingTxIndex) {
+      editingTxIndex--;
+    }
+
+    appData[type].splice(index, 1);
+    await writeToJsonFile();
+    refreshUI();
+    toast('Entry deleted.');
+  }
+
+  function cancelTxEdit(){
+    editingTxType = null;
+    editingTxIndex = null;
+    document.getElementById('tx-form-title').textContent = '2. Add entry';
+    document.getElementById('btn-tx').textContent = 'Save entry';
+    document.getElementById('btn-tx-cancel').style.display = 'none';
+    clearTxForm();
+  }
+
+  function clearTxForm(){
+    document.getElementById('t-name').selectedIndex = 0;
+    document.getElementById('t-amount').value = '';
+  }
+
+  async function saveGoal(){
+    const nameEl = document.getElementById('g-name');
+    const targetEl = document.getElementById('g-target');
+    const currentEl = document.getElementById('g-current');
+    const name = nameEl.value.trim();
+    const target = parseFloat(targetEl.value);
+    const current = parseFloat(currentEl.value);
+
+    if (!name) return markInvalid(nameEl, 'Give your goal a name.');
+    if (isNaN(target) || target <= 0) return markInvalid(targetEl, 'Enter a target greater than 0.');
+    if (isNaN(current) || current < 0) return markInvalid(currentEl, 'Enter a current amount of 0 or more.');
+
+    if (editingGoalIndex !== null) {
+      appData.goals[editingGoalIndex] = { name, target, current };
+      cancelGoalEdit();
+      toast('Goal updated.');
+    } else {
+      appData.goals.push({ name, target, current });
+      toast('Goal added.');
+    }
+
+    await writeToJsonFile();
+    clearGoalForm();
+    refreshUI();
+  }
+
+  function startEditGoal(index){
+    editingGoalIndex = index;
+    const goal = appData.goals[index];
+
+    document.getElementById('g-name').value = goal.name;
+    document.getElementById('g-target').value = goal.target;
+    document.getElementById('g-current').value = goal.current;
+    document.getElementById('btn-goal').textContent = 'Update goal';
+    document.getElementById('btn-goal-cancel').style.display = 'inline-flex';
+  }
+
+  async function deleteGoal(index){
+    if (!confirm('Remove this goal?')) return;
+
+    if (editingGoalIndex === index) {
+      cancelGoalEdit();
+    } else if (index < editingGoalIndex) {
+      editingGoalIndex--;
+    }
+
+    appData.goals.splice(index, 1);
+    await writeToJsonFile();
+    refreshUI();
+    toast('Goal removed.');
+  }
+
+  function cancelGoalEdit(){
+    editingGoalIndex = null;
+    document.getElementById('btn-goal').textContent = 'Add goal';
+    document.getElementById('btn-goal-cancel').style.display = 'none';
+    clearGoalForm();
+  }
+
+  function clearGoalForm(){
+    document.getElementById('g-name').value = '';
+    document.getElementById('g-target').value = '';
+    document.getElementById('g-current').value = '';
+  }
+
+  function clearFilters(){
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-type').value = 'all';
+    document.getElementById('filter-date-from').value = '';
+    document.getElementById('filter-date-to').value = '';
+    renderHistory();
+  }
+
+  function exportCSV(){
+    const rows = [['Type', 'Category', 'Amount', 'Date']];
+    appData.savings.forEach(s => rows.push(['Savings', s.name || 'Untitled', s.amount, s.date]));
+    appData.debts.forEach(d => rows.push(['Debt', d.name || 'Untitled', d.amount, d.date]));
+
+    if (rows.length === 1) return toast('There is nothing to export yet.', 'error');
+
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ledger-export-${new Date().toISOString().substring(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV exported.');
+  }
+
+  function refreshUI(){
+    calculateBalances();
+    renderItemNames();
+    renderGoals(appData.goals);
+    renderCategorySummary();
+    renderHistory();
+    renderChart(appData.savings, appData.debts);
+    renderItemChart(appData.savings, appData.debts);
+  }
+
+  function calculateBalances(){
+    const totalSavings = appData.savings.reduce((sum, item) => sum + item.amount, 0);
+    const totalDebts = appData.debts.reduce((sum, item) => sum + item.amount, 0);
+    const netBalance = totalSavings - totalDebts;
+
+    document.getElementById('summary-savings').textContent = `$${totalSavings.toFixed(2)}`;
+    document.getElementById('summary-debts').textContent = `$${totalDebts.toFixed(2)}`;
+
+    const netEl = document.getElementById('summary-net');
+    netEl.textContent = `$${netBalance.toFixed(2)}`;
+    netEl.style.color = netBalance >= 0 ? 'var(--green)' : 'var(--rust)';
+  }
+
+  function renderItemNames(){
+    const selectEl = document.getElementById('t-name');
+    const listContainer = document.getElementById('item-names-list');
+    const currentSelection = selectEl.value;
+
+    selectEl.innerHTML = '<option value="" disabled selected>Select a category</option>';
+    listContainer.innerHTML = '';
+
+    if (!appData.itemNames) appData.itemNames = [];
+
+    if (appData.itemNames.length === 0) {
+      listContainer.innerHTML = '<div class="empty-note" style="padding:6px 0;">No categories yet. Add one above.</div>';
+    }
+
+    appData.itemNames.sort().forEach((name, index) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      selectEl.appendChild(opt);
+
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = `${name} <button type="button" aria-label="Remove ${name}" onclick="deleteItemName(${index})">✕</button>`;
+      listContainer.appendChild(chip);
+    });
+
+    if (currentSelection && [...selectEl.options].some(o => o.value === currentSelection)) {
+      selectEl.value = currentSelection;
+    }
+  }
+
+  function renderCategorySummary(){
+    const tbody = document.getElementById('category-summary-body');
+    tbody.innerHTML = '';
+    const summaryMap = {};
+
+    appData.savings.forEach(item => {
+      const name = item.name || 'Untitled';
+      if (!summaryMap[name]) summaryMap[name] = { savings: 0, debts: 0 };
+      summaryMap[name].savings += item.amount;
+    });
+
+    appData.debts.forEach(item => {
+      const name = item.name || 'Untitled';
+      if (!summaryMap[name]) summaryMap[name] = { savings: 0, debts: 0 };
+      summaryMap[name].debts += item.amount;
+    });
+
+    const categories = Object.keys(summaryMap).sort();
+
+    if (categories.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-note">No categories yet — connect a file to begin.</td></tr>`;
+      return;
+    }
+
+    categories.forEach(catName => {
+      const data = summaryMap[catName];
+      const itemNet = data.savings - data.debts;
+      const netClass = itemNet >= 0 ? 'pos' : 'neg';
+
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${catName}</strong></td>
+          <td class="amount-cell pos">+$${data.savings.toFixed(2)}</td>
+          <td class="amount-cell neg">-$${data.debts.toFixed(2)}</td>
+          <td class="amount-cell ${netClass}">$${itemNet.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  function renderGoals(goals){
+    const container = document.getElementById('goals-container');
+    container.innerHTML = '';
+
+    if (!goals || goals.length === 0) {
+      container.innerHTML = '<div class="empty-note">No goals yet. Add one above to track progress.</div>';
+      return;
+    }
+
+    goals.forEach((goal, index) => {
+      const percent = Math.min((goal.current / goal.target) * 100, 100).toFixed(1);
+      const complete = percent >= 100;
+      container.innerHTML += `
+        <div class="goal-card">
+          <div class="goal-top">
+            <div>
+              <div class="goal-name">${goal.name}</div>
+              <div class="goal-nums">$${goal.current.toFixed(2)} of $${goal.target.toFixed(2)}</div>
+            </div>
+            <div class="goal-actions">
+              <button class="btn btn-text btn-sm" onclick="startEditGoal(${index})">Edit</button>
+              <button class="btn btn-text-danger btn-sm" onclick="deleteGoal(${index})">Delete</button>
+            </div>
+          </div>
+          <div class="bar-track"><div class="bar-fill ${complete ? 'complete' : ''}" style="width:${percent}%;"></div></div>
+          <div class="goal-pct">${percent}%${complete ? ' — reached' : ''}</div>
+        </div>
+      `;
+    });
+  }
+
+  function renderHistory(){
+    const tbody = document.getElementById('tx-history-body');
+    tbody.innerHTML = '';
+
+    const compileList = (arr, type) => arr.map((item, idx) => ({...item, type, originalIdx: idx}));
+    let allTransactions = [
+      ...compileList(appData.savings, 'savings'),
+      ...compileList(appData.debts, 'debts')
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const searchVal = document.getElementById('filter-search').value.toLowerCase();
+    const typeFilter = document.getElementById('filter-type').value;
+    const dateFrom = document.getElementById('filter-date-from').value;
+    const dateTo = document.getElementById('filter-date-to').value;
+
+    if (typeFilter !== 'all') allTransactions = allTransactions.filter(tx => tx.type === typeFilter);
+    if (searchVal) allTransactions = allTransactions.filter(tx => (tx.name || '').toLowerCase().includes(searchVal));
+    if (dateFrom) allTransactions = allTransactions.filter(tx => tx.date >= dateFrom);
+    if (dateTo) allTransactions = allTransactions.filter(tx => tx.date <= dateTo + ' 23:59:59');
+
+    if (allTransactions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-note">No entries match these filters.</td></tr>`;
+      return;
+    }
+
+    allTransactions.forEach(tx => {
+      const isSavings = tx.type === 'savings';
+      const typeBadge = isSavings
+        ? '<span class="badge savings">📈 Savings</span>'
+        : '<span class="badge debts">📉 Debt</span>';
+      tbody.innerHTML += `
+        <tr>
+          <td>${typeBadge}</td>
+          <td>${tx.name || 'Untitled'}</td>
+          <td class="amount-cell ${isSavings ? 'pos' : 'neg'}">$${tx.amount.toFixed(2)}</td>
+          <td class="mono" style="color:var(--ink-soft); font-size:12.5px;">${tx.date}</td>
+          <td class="row-actions">
+            <button class="btn btn-text btn-sm" onclick="startEditTx('${tx.type}', ${tx.originalIdx})">Edit</button>
+            <button class="btn btn-text-danger btn-sm" onclick="deleteTransaction('${tx.type}', ${tx.originalIdx})">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  function isDark(){ return document.body.getAttribute('data-theme') === 'dark'; }
+
+  function renderChart(savings, debts){
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    const uniqueTimestamps = [...new Set([...savings.map(s => s.date), ...debts.map(d => d.date)])].sort((a, b) => new Date(a) - new Date(b));
+
+    let runningSavings = 0, runningDebts = 0;
+    const savingsData = [], debtsData = [];
+
+    uniqueTimestamps.forEach(timestamp => {
+      savings.filter(s => s.date === timestamp).forEach(s => runningSavings += s.amount);
+      debts.filter(d => d.date === timestamp).forEach(d => runningDebts += d.amount);
+      savingsData.push(runningSavings);
+      debtsData.push(runningDebts);
+    });
+
+    const gridColor = isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark() ? '#A39C89' : '#736B58';
+
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: uniqueTimestamps,
+        datasets: [
+          { label: 'Savings', data: savingsData, borderColor: '#2E6B4F', backgroundColor: '#2E6B4F', fill: false, tension: 0.25, pointRadius: 2 },
+          { label: 'Debt', data: debtsData, borderColor: '#9C3B32', backgroundColor: '#9C3B32', fill: false, tension: 0.25, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Inter' } } },
+          x: { grid: { display: false }, ticks: { color: tickColor, font: { family: 'Inter', size: 10 } } }
+        },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 10, color: tickColor, font: { family: 'Inter', size: 11.5 } } } }
+      }
+    });
+  }
+
+  function renderItemChart(savings, debts){
+    const ctx = document.getElementById('itemChart').getContext('2d');
+
+    const uniqueTimestamps = [...new Set([
+      ...savings.map(s => s.date),
+      ...debts.map(d => d.date)
+    ])].sort((a, b) => new Date(a) - new Date(b));
+
+    const uniqueNames = [...new Set([
+      ...savings.map(s => s.name),
+      ...debts.map(d => d.name)
+    ])].filter(Boolean).sort();
+
+    const runningBalances = {};
+    const datasetsMap = {};
+
+    uniqueNames.forEach(name => {
+      runningBalances[name] = 0;
+      datasetsMap[name] = [];
+    });
+
+    uniqueTimestamps.forEach(timestamp => {
+      uniqueNames.forEach(name => {
+        savings.filter(s => s.date === timestamp && s.name === name)
+               .forEach(s => runningBalances[name] += s.amount);
+
+        debts.filter(d => d.date === timestamp && d.name === name)
+             .forEach(d => runningBalances[name] -= d.amount);
+
+        datasetsMap[name].push(runningBalances[name]);
+      });
+    });
+
+    const gridColor = isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark() ? '#A39C89' : '#736B58';
+
+    const lineDatasets = uniqueNames.map((name, index) => {
+      const uniqueHue = (index * 137.5) % 360;
+      const colorString = `hsl(${uniqueHue}, 55%, ${isDark() ? 65 : 45}%)`;
+      return {
+        label: name,
+        data: datasetsMap[name],
+        borderColor: colorString,
+        backgroundColor: colorString,
+        fill: false,
+        tension: 0.25,
+        pointRadius: 2
+      };
+    });
+
+    if (itemChartInstance) itemChartInstance.destroy();
+
+    itemChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { labels: uniqueTimestamps, datasets: lineDatasets },
+      options: {
+        responsive: true,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Inter' } } },
+          x: { grid: { display: false }, ticks: { color: tickColor, font: { family: 'Inter', size: 10 } } }
+        },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 9, color: tickColor, font: { family: 'Inter', size: 10.5 } } } }
+      }
+    });
+  }
+</script>
+</body>
+</html>

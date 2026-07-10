@@ -1,0 +1,83 @@
+:root {
+    --card-transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body {
+    background-color: var(--bs-body-bg);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Custom Navbar Styling --- */
+.navbar-custom {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.navbar-custom .navbar-brand i {
+    color: #00e5ff; 
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+.navbar-custom .btn {
+    transition: all 0.3s ease;
+}
+
+.navbar-custom .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+/* ------------------------------ */
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.stat-card {
+    border-radius: 12px;
+}
+
+.event-card {
+    border-radius: 12px;
+    transition: var(--card-transition);
+    border: 1px solid var(--bs-border-color);
+}
+
+.event-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.countdown-box {
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.vol-badge {
+    font-size: 0.85rem;
+}
+
+.trading-row {
+    background-color: var(--bs-tertiary-bg);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+/* Scrollbar styling for better UI */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 4px;
+}

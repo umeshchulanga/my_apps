@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futures Trading Calculator</title>
+  
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+  <style>
+    body { background-color: #f8f9fa; font-size: 0.9rem; }
+    .card { border: none; border-radius: 12px; }
+    .form-control:focus { box-shadow: none; border-color: #0d6efd; }
+    .val-display { font-size: 1.25rem; font-weight: 600; }
+    .val-display.text-danger { color: #dc3545 !important; }
+    .val-display.text-success { color: #198754 !important; }
+    .stat-box { background: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #e9ecef; }
+  </style>
+</head>
+<body class="py-4">
+
+<div class="container" style="max-width: 800px;">
+  <h4 class="mb-4 text-center fw-bold text-secondary">
+    <i class="fa-solid fa-chart-line me-2"></i>Futures Trading Calculator
+  </h4>
+
+  <!-- 1. Position Setup -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+      <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">
+        <i class="fa-solid fa-sliders me-2"></i>Position Setup
+      </h6>
+      
+      <!-- Direction Toggle -->
+      <div class="btn-group w-100 mb-4" role="group" id="side-tog">
+        <button type="button" class="btn btn-primary fw-bold" onclick="setSide('long', this)">Long</button>
+        <button type="button" class="btn btn-outline-secondary fw-bold" onclick="setSide('short', this)">Short</button>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold">Entry Price</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-dollar-sign"></i></span>
+            <input type="number" class="form-control" id="entry" value="50000" min="0" step="any" oninput="calc()">
+            <span class="input-group-text bg-light text-muted">USDT</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold">Leverage</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-bolt"></i></span>
+            <input type="number" class="form-control" id="lev" value="10" min="1" max="125" step="1" oninput="calc()">
+            <span class="input-group-text bg-light text-muted">×</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold">Position Size</label>
+          <div class="input-group input-group-sm">
+            <input type="number" class="form-control" id="pos" value="1000" min="0" step="any" oninput="calc()">
+            <span class="input-group-text bg-light text-muted">USDT</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold">Maintenance Margin</label>
+          <div class="input-group input-group-sm">
+            <input type="number" class="form-control" id="maint" value="0.5" min="0" max="10" step="0.1" oninput="calc()">
+            <span class="input-group-text bg-light text-muted">%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label text-muted small fw-semibold">Take Profit Price (Optional)</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-success"><i class="fa-solid fa-arrow-trend-up"></i></span>
+            <input type="number" class="form-control" id="tp" placeholder="e.g. 55000" min="0" step="any" oninput="calc()">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Stop Loss Setup -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+      <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">
+        <i class="fa-solid fa-shield-halved me-2"></i>Stop Loss Setup
+      </h6>
+
+      <div class="btn-group w-100 mb-4" role="group" id="sl-mode-tog">
+        <button type="button" class="btn btn-dark fw-bold" onclick="setSlMode('price', this)">By Price</button>
+        <button type="button" class="btn btn-outline-secondary fw-bold" onclick="setSlMode('usdt', this)">By USDT Loss Amount</button>
+      </div>
+
+      <!-- SL by Price -->
+      <div id="sl-price-section">
+        <label class="form-label text-muted small fw-semibold">Stop Loss Price</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light text-danger"><i class="fa-solid fa-arrow-trend-down"></i></span>
+          <input type="number" class="form-control" id="sl-price" placeholder="e.g. 48000" min="0" step="any" oninput="onSlPriceChange()">
+        </div>
+      </div>
+
+      <!-- SL by USDT -->
+      <div id="sl-usdt-section" style="display:none;">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Max Loss in USDT</label>
+            <div class="input-group input-group-sm">
+              <input type="number" class="form-control" id="sl-usdt" placeholder="e.g. 200" min="0" step="any" oninput="onSlUsdtChange()">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Calculated SL Price</label>
+            <input type="text" class="form-control form-control-sm bg-light text-danger fw-bold" id="sl-usdt-price-out" placeholder="Auto-calculated" readonly>
+          </div>
+        </div>
+        
+        <div id="sl-usdt-result" style="display:none;" class="alert alert-warning py-2 px-3 d-flex align-items-center gap-3 mb-0">
+          <div>
+            <span class="d-block text-muted" style="font-size: 0.75rem;">Triggers at</span>
+            <span class="fs-4 fw-bold text-danger" id="sl-usdt-price-display">—</span>
+          </div>
+          <div class="border-start border-warning ps-3">
+            <span class="d-block small text-dark fw-semibold" id="sl-usdt-pct-away"></span>
+            <span class="d-block small text-muted" id="sl-usdt-qty"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Key Levels & Progress -->
+  <div class="card shadow-sm mb-4 border-top border-3 border-primary">
+    <div class="card-body p-4">
+      <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">
+        <i class="fa-solid fa-crosshairs me-2"></i>Key Levels
+      </h6>
+      
+      <div class="row g-2 mb-4 text-center">
+        <div class="col-6 col-md-3">
+          <div class="stat-box">
+            <span class="d-block text-muted small mb-1">Liquidation</span>
+            <span class="val-display text-danger" id="liq-price">—</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box">
+            <span class="d-block text-muted small mb-1">Initial Margin</span>
+            <span class="val-display text-dark" id="init-m">—</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box">
+            <span class="d-block text-muted small mb-1">TP Profit</span>
+            <span class="val-display" id="tp-pnl">—</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-box">
+            <span class="d-block text-muted small mb-1">SL Loss</span>
+            <span class="val-display text-danger" id="sl-pnl">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between text-muted small fw-semibold mb-1">
+        <span>Liq. Price</span>
+        <span id="bar-mid"></span>
+        <span>Entry Price</span>
+      </div>
+      <div class="progress" style="height: 24px;">
+        <div id="liq-bar" class="progress-bar progress-bar-striped progress-bar-animated fw-bold text-end pe-2" role="progressbar" style="width: 0%; transition: width 0.4s;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Risk Breakdown -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body p-0">
+      <ul class="list-group list-group-flush rounded-3">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-coins me-2"></i>Notional Value</span>
+          <span class="fw-bold" id="notional">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-cubes me-2"></i>Contract Quantity</span>
+          <span class="fw-bold" id="qty">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-percent me-2"></i>Move to Liquidation</span>
+          <span class="fw-bold" id="pct-liq">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-stopwatch me-2"></i>Move to Stop Loss</span>
+          <span class="fw-bold" id="pct-sl">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-scale-balanced me-2"></i>Risk / Reward</span>
+          <span class="fw-bold" id="rr-ratio">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+          <span class="text-muted"><i class="fa-solid fa-magnifying-glass-chart me-2"></i>ROE at TP</span>
+          <span class="fw-bold" id="roe-tp">—</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 bg-light">
+          <span class="fw-bold">Risk Level</span>
+          <span id="risk-badge">—</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 5. Simulator -->
+  <div class="card shadow-sm mb-5 border-top border-3 border-info">
+    <div class="card-body p-4">
+      <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">
+        <i class="fa-solid fa-calculator me-2"></i>PnL Simulator
+      </h6>
+      <div class="mb-4">
+        <label class="form-label text-muted small fw-semibold">Target Price (USDT)</label>
+        <input type="number" class="form-control" id="sim" placeholder="Enter a hypothetical price..." min="0" step="any" oninput="simulate()">
+      </div>
+      <div class="row g-3 text-center">
+        <div class="col-4">
+          <span class="d-block text-muted small mb-1">Unrealised PnL</span>
+          <span class="val-display fs-5" id="sim-pnl">—</span>
+        </div>
+        <div class="col-4 border-start border-end">
+          <span class="d-block text-muted small mb-1">ROE</span>
+          <span class="val-display fs-5" id="sim-roe">—</span>
+        </div>
+        <div class="col-4">
+          <span class="d-block text-muted small mb-1">Margin Ratio</span>
+          <span class="val-display fs-5" id="sim-mr">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let side = 'long';
+let slMode = 'price';
+
+// Toggle Long/Short
+function setSide(s, btn) {
+  side = s;
+  const buttons = document.querySelectorAll('#side-tog button');
+  buttons.forEach(b => {
+    b.className = 'btn fw-bold ' + (b.innerText.toLowerCase() === s ? (s === 'long' ? 'btn-primary' : 'btn-danger') : 'btn-outline-secondary');
+  });
+  if (slMode === 'usdt') onSlUsdtChange(); else calc();
+}
+
+// Toggle SL Mode
+function setSlMode(m, btn) {
+  slMode = m;
+  const buttons = document.querySelectorAll('#sl-mode-tog button');
+  buttons.forEach(b => {
+    b.className = 'btn fw-bold ' + (b === btn ? 'btn-dark' : 'btn-outline-secondary');
+  });
+  document.getElementById('sl-price-section').style.display = m === 'price' ? 'block' : 'none';
+  document.getElementById('sl-usdt-section').style.display = m === 'usdt' ? 'block' : 'none';
+  calc();
+}
+
+function fmt(n, d=2) { if (n===null||isNaN(n)) return '—'; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmt4(n) { if (n===null||isNaN(n)) return '—'; return '$'+n.toFixed(4); }
+function fmtPct(n) { if (n===null||isNaN(n)) return '—'; return (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function applyColorClass(el, val) {
+  el.classList.remove('text-success', 'text-danger', 'text-dark');
+  if (val > 0) el.classList.add('text-success');
+  else if (val < 0) el.classList.add('text-danger');
+  else el.classList.add('text-dark');
+}
+
+function getSlPrice() {
+  if (slMode === 'price') return parseFloat(document.getElementById('sl-price').value) || null;
+  return parseFloat(document.getElementById('sl-usdt-price-out').value) || null;
+}
+
+function onSlPriceChange() { calc(); }
+
+function onSlUsdtChange() {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const lev = parseFloat(document.getElementById('lev').value);
+  const pos = parseFloat(document.getElementById('pos').value);
+  const maxLoss = parseFloat(document.getElementById('sl-usdt').value);
+  const resultEl = document.getElementById('sl-usdt-result');
+  const outEl = document.getElementById('sl-usdt-price-out');
+
+  if (!entry || !lev || !pos || !maxLoss || maxLoss <= 0) {
+    outEl.value = ''; resultEl.style.display = 'none'; calc(); return;
+  }
+
+  const notional = pos * lev;
+  const qty = notional / entry;
+  const slPrice = side === 'long' ? entry - (maxLoss / qty) : entry + (maxLoss / qty);
+
+  if (slPrice <= 0) { outEl.value = ''; resultEl.style.display = 'none'; calc(); return; }
+
+  outEl.value = slPrice.toFixed(4);
+  document.getElementById('sl-usdt-price-display').textContent = fmt4(slPrice);
+  document.getElementById('sl-usdt-pct-away').textContent = Math.abs((slPrice - entry) / entry * 100).toFixed(2) + '% from entry';
+  document.getElementById('sl-usdt-qty').textContent = 'Qty: ' + qty.toFixed(6) + ' units';
+  resultEl.style.display = 'flex';
+  calc();
+}
+
+function calc() {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const lev = parseFloat(document.getElementById('lev').value);
+  const pos = parseFloat(document.getElementById('pos').value);
+  const maintPct = parseFloat(document.getElementById('maint').value) / 100;
+  const tpVal = parseFloat(document.getElementById('tp').value);
+  const slVal = getSlPrice();
+
+  if (!entry || !lev || !pos) return;
+
+  const notional = pos * lev;
+  const qty = notional / entry;
+  const initMpct = 1 / lev;
+
+  const liqPrice = side === 'long' 
+    ? entry * (1 - initMpct + maintPct) 
+    : entry * (1 + initMpct - maintPct);
+
+  const pctToLiq = Math.abs((liqPrice - entry) / entry * 100);
+
+  document.getElementById('liq-price').textContent = fmt4(liqPrice);
+  document.getElementById('init-m').textContent = fmt(pos);
+  document.getElementById('notional').textContent = fmt(notional);
+  document.getElementById('qty').textContent = qty.toFixed(6) + ' units';
+  document.getElementById('pct-liq').textContent = pctToLiq.toFixed(2) + '%';
+
+  // Progress Bar
+  const bar = document.getElementById('liq-bar');
+  bar.style.width = Math.min(pctToLiq, 100) + '%';
+  bar.className = 'progress-bar progress-bar-striped fw-bold text-end pe-2 ' + 
+                 (pctToLiq < 5 ? 'bg-danger' : pctToLiq < 15 ? 'bg-warning' : 'bg-success');
+  bar.textContent = pctToLiq.toFixed(1) + '%';
+  document.getElementById('bar-mid').textContent = pctToLiq.toFixed(2) + '% away';
+
+  let tpPnl = null, slPnl = null;
+  const dir = side === 'long' ? 1 : -1;
+
+  if (!isNaN(tpVal) && tpVal > 0) {
+    tpPnl = dir * (tpVal - entry) / entry * notional;
+    const tpEl = document.getElementById('tp-pnl');
+    tpEl.textContent = fmt(tpPnl); applyColorClass(tpEl, tpPnl);
+    
+    const roeEl = document.getElementById('roe-tp');
+    roeEl.textContent = (tpPnl / pos * 100).toFixed(2) + '%'; 
+    applyColorClass(roeEl, tpPnl);
+  } else {
+    document.getElementById('tp-pnl').textContent = '—';
+    document.getElementById('roe-tp').textContent = '—';
+    document.getElementById('tp-pnl').className = 'val-display';
+    document.getElementById('roe-tp').className = 'fw-bold';
+  }
+
+  if (slVal && slVal > 0) {
+    slPnl = dir * (slVal - entry) / entry * notional;
+    const slEl = document.getElementById('sl-pnl');
+    slEl.textContent = fmt(slPnl); applyColorClass(slEl, slPnl);
+    document.getElementById('pct-sl').textContent = Math.abs((slVal - entry) / entry * 100).toFixed(2) + '%';
+  } else {
+    document.getElementById('sl-pnl').textContent = '—';
+    document.getElementById('pct-sl').textContent = '—';
+    document.getElementById('sl-pnl').className = 'val-display text-danger';
+  }
+
+  document.getElementById('rr-ratio').textContent = 
+    (tpPnl !== null && slPnl !== null && slPnl < 0) 
+    ? (tpPnl / Math.abs(slPnl)).toFixed(2) + ' : 1' : '—';
+
+  // Risk Badge
+  const rb = document.getElementById('risk-badge');
+  if (lev >= 50) rb.innerHTML = '<span class="badge bg-danger rounded-pill px-3">Extreme</span>';
+  else if (lev >= 20) rb.innerHTML = '<span class="badge bg-warning text-dark rounded-pill px-3">High</span>';
+  else if (lev >= 10) rb.innerHTML = '<span class="badge bg-info text-dark rounded-pill px-3">Medium</span>';
+  else rb.innerHTML = '<span class="badge bg-success rounded-pill px-3">Low</span>';
+
+  simulate();
+}
+
+function simulate() {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const lev = parseFloat(document.getElementById('lev').value);
+  const pos = parseFloat(document.getElementById('pos').value);
+  const simPrice = parseFloat(document.getElementById('sim').value);
+
+  if (!entry || !lev || !pos || isNaN(simPrice) || simPrice <= 0) {
+    ['sim-pnl', 'sim-roe', 'sim-mr'].forEach(id => { 
+      document.getElementById(id).textContent = '—'; 
+      document.getElementById(id).className = 'val-display fs-5'; 
+    });
+    return;
+  }
+
+  const notional = pos * lev;
+  const pnl = (side === 'long' ? 1 : -1) * (simPrice - entry) / entry * notional;
+  const roe = pnl / pos * 100;
+  const equity = pos + pnl;
+  const mr = equity > 0 ? equity / notional * 100 : 0;
+
+  const pe = document.getElementById('sim-pnl'); pe.textContent = fmt(pnl); applyColorClass(pe, pnl);
+  const re = document.getElementById('sim-roe'); re.textContent = fmtPct(roe); applyColorClass(re, roe);
+  
+  const me = document.getElementById('sim-mr');
+  me.textContent = mr.toFixed(2) + '%';
+  me.className = 'val-display fs-5 ' + (mr < (parseFloat(document.getElementById('maint').value) / 100) * 100 * 1.5 ? 'text-danger' : mr < 5 ? 'text-warning' : '');
+}
+
+calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "eventCategories": [
+    "Airdrop",
+    "GATE",
+    "MAXC"
+
+  ],
+  "tradingTypes": [
+    "Spot",
+    "Future",
+    "Margin",
+    "Convert",
+    "State",
+    "Earn",
+    "Tradfi",
+    "Watch",
+    "Airdrop"
+  ]
+}
